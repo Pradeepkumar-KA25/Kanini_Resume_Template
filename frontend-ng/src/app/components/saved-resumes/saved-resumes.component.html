@@ -1,0 +1,109 @@
+<section class="saved-resumes-container" aria-labelledby="saved-resumes-title">
+  <div class="saved-resumes-heading"><h2 id="saved-resumes-title" class="saved-resumes-title">Saved resumes</h2><button class="back-btn" type="button" (click)="back.emit()">Back to upload</button></div>
+
+  <!-- Error message -->
+  @if (errorMsg()) {
+    <div class="error-banner">{{ errorMsg() }}</div>
+  }
+
+  <!-- Search bar -->
+  <div class="search-bar">
+    <input
+      type="text"
+      class="search-input"
+      placeholder="Search by name, skills, company..."
+      [(ngModel)]="searchQuery"
+      (keyup.enter)="onSearch()"
+      [disabled]="isSearching()"
+    />
+    <button class="search-btn" (click)="onSearch()" [disabled]="isSearching()">
+      {{ isSearching() ? 'Searching...' : 'Search' }}
+    </button>
+    @if (showSearchResults()) {
+      <button class="clear-btn" (click)="clearSearch()">Clear</button>
+    }
+  </div>
+
+  <!-- Loading state -->
+  @if (isLoading()) {
+    <div class="loading-spinner">Loading resumes...</div>
+  }
+
+  <!-- Search results -->
+  @if (showSearchResults() && searchResults().length > 0) {
+    <div class="resumes-section">
+      <h3 class="section-title">Search Results ({{ searchResults().length }})</h3>
+      <div class="resumes-list">
+        @for (resume of searchResults(); track resume.id) {
+          <div class="resume-row">
+            <button type="button" class="resume-item" (click)="loadResume(resume.id)" [attr.aria-label]="'Load resume by ' + resume.name">
+            <div class="resume-header">
+              <div class="resume-name">{{ resume.name }}</div>
+              @if (resume.score) {
+                <div class="relevance-score">{{ (resume.score * 100).toFixed(0) }}% match</div>
+              }
+            </div>
+            <div class="resume-meta">
+              @if (resume.email) {
+                <span class="meta-item">{{ resume.email }}</span>
+              }
+              @if (resume.created_at) {
+                <span class="meta-item">{{ resume.created_at | date: 'MMM d, HH:mm' }}</span>
+              }
+            </div>
+            </button>
+            <button
+              type="button"
+              class="delete-btn"
+              (click)="deleteResume(resume.id, $event)"
+              aria-label="Delete resume"
+            >
+              ✕
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  } @else if (showSearchResults() && searchResults().length === 0) {
+    <div class="no-results">No resumes match your search</div>
+  }
+
+  <!-- All resumes list (when not searching) -->
+  @if (!showSearchResults() && resumes().length > 0) {
+    <div class="resumes-section">
+      <h3 class="section-title">All Resumes ({{ resumes().length }})</h3>
+      <div class="resumes-list">
+        @for (resume of resumes(); track resume.id) {
+          <div class="resume-row">
+            <button type="button" class="resume-item" (click)="loadResume(resume.id)" [attr.aria-label]="'Load resume by ' + resume.name">
+            <div class="resume-header">
+              <div class="resume-name">{{ resume.name }}</div>
+            </div>
+            <div class="resume-meta">
+              @if (resume.email) {
+                <span class="meta-item">{{ resume.email }}</span>
+              }
+              @if (resume.created_at) {
+                <span class="meta-item">{{ resume.created_at | date: 'MMM d, HH:mm' }}</span>
+              }
+              @if (resume.filename) {
+                <span class="meta-item file-name">{{ resume.filename }}</span>
+              }
+            </div>
+            </button>
+            <button
+              type="button"
+              class="delete-btn"
+              (click)="deleteResume(resume.id, $event)"
+              aria-label="Delete resume"
+            >
+              ✕
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  } @else if (!showSearchResults() && !isLoading()) {
+    <div class="no-resumes">No saved resumes yet. Upload your first resume above!</div>
+  }
+</section>

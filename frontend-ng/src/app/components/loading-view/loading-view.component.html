@@ -1,0 +1,14 @@
+<div class="loading-section">
+  <div class="loading-spinner-wrap">
+    <div class="spinner"></div>
+  </div>
+  <h2>Processing your resume...</h2>
+  <div class="loading-steps">
+    @for (step of steps; track step; let i = $index) {
+      <div class="loading-step">
+        <div class="step-dot" [style.animation-delay]="(i * 0.3) + 's'"></div>
+        {{ step }}
+      </div>
+    }
+  </div>
+</div>

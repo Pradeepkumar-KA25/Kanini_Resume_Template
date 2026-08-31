@@ -1,0 +1,46 @@
+<div
+  class="template-card"
+  [class.kanini-theme]="isKaniniTemplate"
+  [class.deloitte-theme]="isDeloitteTemplate"
+>
+  <div class="template-card-header">
+    <div class="template-title-wrap">
+      <span class="template-badge" *ngIf="badge">{{ badge }}</span>
+      <div class="template-name-row">
+        <img
+          *ngIf="iconSrc"
+          class="template-header-icon"
+          [src]="iconSrc"
+          [alt]="title + ' icon'"
+        />
+        <span class="template-name">{{ title }}</span>
+      </div>
+      <span class="template-desc">{{ description }}</span>
+    </div>
+  </div>
+
+  <div class="preview-area" #previewArea [style.height]="previewAreaHeight">
+    <div
+      [style.transform]="'scale(' + scale + ')'"
+      [style.transform-origin]="'top left'"
+      [style.width.px]="780"
+      [style.margin-right]="marginRight"
+      [innerHTML]="safeHtml"
+    ></div>
+  </div>
+
+  <div class="download-bar">
+    <span class="download-label">Download as:</span>
+    <div class="download-btns">
+      <button class="btn-download word" (click)="download('docx')" title="Download as Word">
+        <img class="download-icon" src="/doc-icon.jfif" alt="DOC icon" />
+        DOCX
+      </button>
+      <button class="btn-download pdf" (click)="download('pdf')" [disabled]="pdfLoading" title="Download as PDF">
+        <span *ngIf="pdfLoading" class="pdf-spinner"></span>
+        <img *ngIf="!pdfLoading" class="download-icon" src="/pdf-icon.png" alt="PDF icon" />
+        {{ pdfLoading ? 'Generating PDF...' : 'PDF' }}
+      </button>
+    </div>
+  </div>
+</div>

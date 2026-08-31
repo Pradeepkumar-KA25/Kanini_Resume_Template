@@ -1,0 +1,55 @@
+<div class="upload-page">
+  <div class="upload-container">
+    <div class="upload-left">
+      <h1 class="hero-title">
+        Transform your resume into <span class="hero-title-highlight">professional templates</span>
+      </h1>
+      <div class="hero-underline"></div>
+      <p class="hero-subtitle">Upload your resume and instantly get two professionally formatted templates.</p>
+    </div>
+
+    <div class="upload-card">
+      <div class="llm-select-wrap">
+        <label for="llmModel">Model</label>
+        <div class="llm-select-control">
+          <select id="llmModel" [(ngModel)]="selectedLlmModel" (click)="$event.stopPropagation()">
+            @for (group of llmOptionGroups; track group.key) {
+              <optgroup [label]="group.label">
+                @for (option of group.options; track option.value) {
+                  <option [value]="option.value">
+                    {{ option.label }}{{ option.available === false ? ' (falls back to regex)' : '' }}
+                  </option>
+                }
+              </optgroup>
+            }
+          </select>
+          <p class="llm-select-hint">Any model can be selected; if a provider is unavailable, the backend falls back to regex parsing without error.</p>
+        </div>
+      </div>
+
+      <div
+        class="upload-box"
+        [class.drag-over]="dragOver"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave()"
+        (drop)="onDrop($event)"
+        (click)="onBoxClick()"
+      >
+        <div class="upload-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 16V4m0 0-4 4m4-4 4 4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h3>Choose a file or drag and drop it here</h3>
+        <p>Supported Formats: Pdf and Docx</p>
+        <button class="btn-browse" type="button" (click)="onBrowseClick($event)">
+          <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Browse Files
+        </button>
+        <input #fileInput type="file" accept=".pdf,.docx,.doc" (change)="onInputChange($event)" style="display:none" />
+      </div>
+    </div>
+  </div>
+</div>

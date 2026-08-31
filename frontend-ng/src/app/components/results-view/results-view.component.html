@@ -1,0 +1,35 @@
+<div class="results-section">
+  <!-- Top bar -->
+  <div class="results-topbar">
+    <div class="results-status">
+      <span class="status-icon">✓</span>
+      <div>
+        <h2>Resume processed successfully</h2>
+        <span class="results-meta">
+          {{ expCount }} experience entries · {{ skillCount }} skills · {{ certCount }} certifications
+        </span>
+      </div>
+    </div>
+    <button class="btn-new" (click)="reset.emit()">Upload New Resume</button>
+  </div>
+
+  <!-- Both templates side by side -->
+  <div class="templates-grid">
+    <app-template-card
+      title="Kanini Format 1"
+      iconSrc="/Kanini_Logo_Image.png"
+      [candidateName]="sessionData.resume_data.contact.name || ''"
+      [previewHtml]="sessionData.preview_html.template1"
+      [sessionId]="sessionData.session_id"
+      templateId="template1"
+    />
+    <app-template-card
+      title="Kanini Format2"
+      iconSrc="/deloitte-template-icon.webp"
+      [candidateName]="sessionData.resume_data.contact.name || ''"
+      [previewHtml]="sessionData.preview_html.template2"
+      [sessionId]="sessionData.session_id"
+      templateId="template2"
+    />
+  </div>
+</div>

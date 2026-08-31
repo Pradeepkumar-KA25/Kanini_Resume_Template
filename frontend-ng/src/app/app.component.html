@@ -1,0 +1,35 @@
+<header class="app-header">
+  <div class="header-brand">
+    <img class="header-logo-img" src="/kanini-logo.png" alt="Kanini" />
+    <span class="header-separator"></span>
+    <span class="header-product">Resume Builder</span>
+  </div>
+</header>
+
+<div class="push-toast-wrap" *ngIf="toastVisible()">
+  <div class="push-toast" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="push-toast-msg">{{ errorMsg() }}</div>
+    <button class="push-toast-close" type="button" (click)="dismissToast()" aria-label="Close notification">×</button>
+    <div class="push-toast-progress" [style.--toast-duration.ms]="toastDurationMs"></div>
+  </div>
+</div>
+
+<main class="app-main">
+  <section class="app-main-panel">
+    @switch (status()) {
+      @case ('idle') {
+        <app-file-upload (fileSelected)="onFileSelected($event)" />
+      }
+      @case ('uploading') {
+        <app-loading-view />
+      }
+      @case ('success') {
+        <app-results-view [sessionData]="sessionData()!" (reset)="reset()" />
+      }
+    }
+  </section>
+</main>
+
+<footer class="app-footer">
+  {{ year }} Kanini Technology Services - Resume Builder
+</footer>

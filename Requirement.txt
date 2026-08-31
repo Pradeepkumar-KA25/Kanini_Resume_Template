@@ -1,0 +1,78 @@
+Requirement Resume Template Standardization (Kanini and Deloitte Formats)
+
+Objective
+Implement a feature that converts any uploaded resume into standardized Kanini and Deloitte resume templates.
+Functional Requirements
+
+1. Resume Upload
+Allow users to upload resumes in supported formats such as PDF, DOC, or DOCX.
+Extract all resume content while preserving the logical structure.
+2. Resume Parsing
+Identify and extract the following sections
+
+Personal Information
+Professional Summary
+Technical Skills
+Work Experience
+Projects
+Education
+Certifications
+Achievements
+Other relevant sections
+3. Template Generation
+Automatically generate both of the following resume templates for every uploaded resume
+
+Kanini Resume Template
+
+Deloitte Resume Template
+
+The user does not need to choose a template. Both templates should be created using the same extracted resume content.
+
+4. Template Mapping
+Map the extracted resume content to the corresponding sections in both Kanini and Deloitte templates.
+If a section does not exist in the uploaded resume, leave it blank or omit it based on the template rules.
+Preserve the chronological order of work experience and education.
+Ensure all information from the uploaded resume is retained.
+Use the same extracted data to populate both templates while maintaining each template's unique layout and formatting.
+5. Template Formatting
+The generated resumes must match the predefined Kanini and Deloitte templates exactly, including
+
+Page layout
+Margins
+Section ordering
+Fonts
+Font sizes
+Colors
+Headers and footers
+Tables
+Spacing
+Bullets
+Alignment
+Overall visual appearance
+Each generated resume should be visually identical to its respective master template, with only the resume content being replaced.
+6. Content Preservation
+Do not modify, summarize, or rewrite the user's content.
+Only reorganize the information to fit the Kanini and Deloitte templates.
+Preserve formatting such as bullet points, dates, company names, job titles, and project descriptions wherever possible.
+7. Output
+Generate both resumes in
+
+DOCX
+PDF
+The generated Kanini and Deloitte resumes should be visually indistinguishable from their respective master templates except for the user-specific content.
+Technical Requirements
+Use predefined Kanini and Deloitte template files as master templates.
+Build a resume parser that extracts structured information from uploaded resumes.
+Implement a mapping engine that places extracted data into the correct placeholders in both templates.
+Preserve styling by replacing only placeholder values rather than recreating the document from scratch.
+Handle resumes with varying section names by mapping equivalent headings (e.g., Profile Summary → Professional Summary, Employment History → Work Experience).
+Ensure the mapping logic supports generating multiple output templates from a single parsed resume.
+Validation
+Ensure no extracted content is lost during conversion.
+Validate that mandatory template sections are populated when data is available.
+Preserve formatting consistency across multiple uploaded resume styles.
+Support resumes with different layouts while generating consistent Kanini and Deloitte outputs.
+Verify that both generated resumes contain identical content while adhering to their respective template designs.
+Expected Result
+When a user uploads any valid resume, the system should automatically extract the content, map it to both the Kanini and Deloitte templates, and generate professionally formatted resumes that match each predefined template exactly in terms of layout, styling, and structure while preserving all original resume content.
+

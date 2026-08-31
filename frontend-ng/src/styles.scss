@@ -1,0 +1,144 @@
+/* ─── Global Variables ─────────────────────────────────────────────────────── */
+:root {
+  --kanini-primary: #0072B4;
+  --kanini-dark:   #1B3A6B;
+  --kanini-mid:    #2A5298;
+  --kanini-light:  #E8F0FB;
+  --kanini-accent: #E87722;
+  --kanini-logo-blue: #0F75C9;
+  --kanini-logo-cyan: #20A3D8;
+  --kanini-logo-lime: #C7EF63;
+  --kanini-text:   #2D3748;
+  --kanini-gray:   #718096;
+  --kanini-sidebar:#2C3E50;
+  --white:         #FFFFFF;
+  --bg:            #F5F7FA;
+  --border:        #CBD5E0;
+  --shadow:        0 4px 24px rgba(27,58,107,.10);
+  --radius:        12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg); color: var(--kanini-text); line-height: 1.6;
+}
+/* header */
+.app-header {
+  background: #041B33;
+  color: white;
+  height: 75px;
+  padding: 0 40px;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 4px 16px rgba(4, 27, 51, 0.18);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-brand { display: flex; align-items: center; gap: 16px; }
+.header-logo-img {
+  height: 32px;
+  width: auto;
+  display: block;
+}
+.header-separator {
+  width: 1px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.25);
+}
+.header-product {
+  font-size: .82rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    height: 64px;
+    padding: 0 20px;
+  }
+
+  .header-logo-img {
+    height: 26px;
+  }
+
+  .header-separator {
+    height: 20px;
+  }
+
+  .header-product {
+    font-size: .7rem;
+  }
+}
+/* main / footer */
+.app-main {
+  min-height: calc(100vh - 75px);
+  padding: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background: var(--bg);
+}
+
+.app-main-panel {
+  width: 100%;
+  min-height: calc(100vh - 75px);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 60px 40px;
+}
+
+@media (max-width: 900px) {
+  .app-main {
+    padding: 0;
+  }
+
+  .app-main-panel {
+    padding: 32px 20px;
+    min-height: calc(100vh - 64px);
+  }
+}
+
+.app-footer { text-align: center; padding: 20px; font-size: .78rem; color: #a0aab5; background: var(--bg); }
+/* ─── Preview HTML (Template 1 – Kanini Format1) ────────────────────────────── */
+/* Mirrors 'Sample KANINI Profile.docx' layout                                  */
+.t1-resume { font-family: 'Times New Roman', Times, serif; font-size: 13px; font-weight: 400; font-style: normal; line-height: 160%; letter-spacing: 0; color: #6B7280; background: white; width: 780px; padding: 28px 36px; box-sizing: border-box; }
+.t1-name { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700; font-style: normal; line-height: 100%; letter-spacing: 0; color: #000000; margin: 0 0 4px; text-align: center; }
+.t1-contact { font-size: 13px; color: #000000; margin: 0 0 8px; text-align: left; }
+.t1-spacer { height: 10px; }
+.t1-section-hdr, .t1-proj-num, .t1-role-co, .t1-resp-hdr { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700; font-style: normal; line-height: 100%; letter-spacing: 0; color: #0072B4; text-transform: uppercase; }
+.t1-section-hdr { margin: 12px 0 4px; }
+.t1-bullet-list { margin: 0 0 6px 0; padding-left: 20px; list-style-type: disc; list-style-position: outside; }
+.t1-bullet { font-size: 13px; font-weight: 400; margin-bottom: 4px; padding-left: 4px; line-height: 160%; color:#000000 }
+.t1-skill-cat { font-size: 13px; font-weight: 400; margin: 8px 0 2px 0; color: #6B7280; }
+.t1-skill-line { font-size: 13px; margin: 0 0 3px 14px; line-height: 160%; }
+.t1-exp-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+.t1-exp-table td { padding: 0; vertical-align: top; }
+.t1-exp-label { font-size: 13px; display: inline-block; padding: 1px 6px 1px 0; white-space: nowrap; vertical-align: top; width: 140px; }
+.t1-exp-sep { font-size: 13px; display: inline-block; width: 20px; text-align: center; }
+.t1-exp-val { font-size: 13px; padding: 1px 0; vertical-align: top; }
+.t1-proj-num { margin: 10px 0 2px; }
+.t1-role-co { margin: 0 0 2px; }
+.t1-resp-hdr { margin: 4px 0 2px; }
+.t1-body { font-size: 13px; font-weight: 400; line-height: 160%; margin: 2px 0; color:#000000 }
+/* ─── Preview HTML (Template 2 – Kanini Profile Format) ─────────────────────── */
+/* Mirrors 'Kanini Format2 .docx' used for client submissions (Deloitte)  */
+.kf-resume { font-family: 'Times New Roman', Times, serif; font-size: 13px; font-weight: 400; font-style: normal; line-height: 160%; letter-spacing: 0; color: #6B7280; background: white; width: 780px; padding: 24px 20px 24px 22px; box-sizing: border-box; }
+.kf-name { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700; font-style: normal; line-height: 100%; letter-spacing: 0; color: #000000; text-align: center; margin: 0 0 8px; }
+.kf-spacer { height: 10px; }
+.kf-h1, .kf-proj-num { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700; font-style: normal; line-height: 100%; letter-spacing: 0; color: #0072B4; text-transform: uppercase; }
+.kf-h1 { margin: 10px 0 4px; }
+.kf-body { font-size: 13px; font-weight: 400; margin: 0 0 3px; line-height: 160%; color:#000000;}
+.kf-tab-row { margin: 2px 0; }
+.kf-resp-bullet { padding-left: 8px; }
+.kf-skill-cat { margin: 0 0 2px; }
+.kf-skill-line { margin: 0 0 3px 18px; }
+.kf-bullet-list { margin: 0 0 6px 0; padding-left: 20px; list-style-type: disc; list-style-position: outside; }
+.kf-bullet { font-size: 13px; margin-bottom: 4px; padding-left: 4px; line-height: 160%; color:#000000; }
+
+.kf-proj-num { margin-top: 8px; }
+
