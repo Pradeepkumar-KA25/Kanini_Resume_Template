@@ -13,7 +13,7 @@ from renderers.format1_view_model import Format1ViewModel
 def apply_format1_page_setup(section) -> None:
     section.page_width = Cm(21.59)
     section.page_height = Cm(27.94)
-    section.top_margin = Cm(2.54)
+    section.top_margin = Cm(2.96)
     section.bottom_margin = Cm(2.54)
     section.left_margin = Cm(2.54)
     section.right_margin = Cm(2.54)
