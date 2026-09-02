@@ -5,7 +5,7 @@ from docx.shared import Cm, Pt, RGBColor
 from models.resume import ResumeData
 from renderers.format2_view_model import Format2ViewModel
 def render(resume: ResumeData, output_path: Path, logo_path: Path | None = None) -> Path:
- d=Document(); s=d.sections[0]; s.page_width=Cm(21);s.page_height=Cm(29.7);s.left_margin=Cm(1.62);s.right_margin=Cm(.42);s.top_margin=Cm(2.54);s.bottom_margin=Cm(.64)
+ d=Document(); s=d.sections[0]; s.page_width=Cm(21);s.page_height=Cm(29.7);s.left_margin=Cm(1.62);s.right_margin=Cm(.42);s.top_margin=Cm(2.96);s.bottom_margin=Cm(.64)
  if logo_path and logo_path.exists(): s.header.paragraphs[0].add_run().add_picture(str(logo_path),width=Cm(3.33))
  v=Format2ViewModel(resume)
  def p(text,bold=False,center=False,heading=False):
