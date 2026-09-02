@@ -1,0 +1,17 @@
+.home { max-width: 1060px; margin: 0 auto; }
+.home-welcome { max-width: 660px; margin-bottom: 32px; }
+.home-eyebrow { margin: 0 0 5px; color: var(--kanini-primary); font-size: .85rem; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; }
+.home h1 { margin: 0; font-size: clamp(1.55rem, 3vw, 2.15rem); line-height: 1.25; color: var(--kanini-dark); }
+.home-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.home-card { min-height: 238px; display: flex; flex-direction: column; align-items: flex-start; padding: 24px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); box-shadow: 0 2px 10px rgba(27, 58, 107, .06); transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+.home-card:hover { transform: translateY(-3px); border-color: var(--kanini-primary); box-shadow: var(--shadow); }
+.home-card h2 { margin: 16px 0 6px; color: var(--kanini-dark); font-size: 1.1rem; line-height: 1.3; }
+.home-card p { margin: 0; color: var(--kanini-gray); font-size: .9rem; line-height: 1.5; }
+.home-card .ui-button { margin-top: auto; }
+.home-icon { position: relative; display: block; width: 34px; height: 38px; border: 2px solid var(--kanini-primary); border-radius: 4px; }
+.home-icon::before, .home-icon::after { position: absolute; content: ''; background: var(--kanini-primary); }
+.document-icon::before { top: 9px; left: 7px; width: 16px; height: 2px; box-shadow: 0 7px 0 var(--kanini-primary), 0 14px 0 var(--kanini-primary); }
+.saved-icon::before { top: 8px; left: 6px; width: 18px; height: 3px; box-shadow: 0 8px 0 var(--kanini-primary), 0 16px 0 var(--kanini-primary); }
+.template-icon::before { top: 7px; left: 7px; width: 7px; height: 7px; box-shadow: 12px 0 0 var(--kanini-primary), 0 12px 0 var(--kanini-primary), 12px 12px 0 var(--kanini-primary); }
+:host-context(.dark-theme) .home h1, :host-context(.dark-theme) .home-card h2 { color: #e6edf5; }
+@media (max-width: 800px) { .home-actions { grid-template-columns: 1fr; max-width: 560px; } .home-card { min-height: 210px; } }

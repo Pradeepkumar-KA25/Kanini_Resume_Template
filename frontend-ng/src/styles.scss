@@ -16,12 +16,41 @@
   --border:        #CBD5E0;
   --shadow:        0 4px 24px rgba(27,58,107,.10);
   --radius:        12px;
+  --control-height: 38px;
+  --control-radius: 6px;
+  --control-padding: 0 14px;
+  --control-padding-compact: 0 10px;
+  --focus-ring: 0 0 0 3px rgba(0, 114, 180, .35);
+  --danger: #b42318;
+  --success: #117a45;
+  --surface-hover: #eef6fb;
+}
+
+:root.dark-theme {
+  --bg: #122033;
+  --white: #1b2b40;
+  --kanini-text: #e6edf5;
+  --kanini-gray: #b4c0ce;
+  --border: #41546a;
+  --kanini-dark: #e6edf5;
+  --kanini-light: #203b59;
+  --surface-hover: #203b59;
+  --shadow: 0 4px 24px rgba(0, 0, 0, .28);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   background: var(--bg); color: var(--kanini-text); line-height: 1.6;
 }
+.ui-button { min-height: var(--control-height); padding: var(--control-padding); border: 1px solid transparent; border-radius: var(--control-radius); background: var(--kanini-primary); color: #fff; font: inherit; font-size: .85rem; font-weight: 700; line-height: 1; cursor: pointer; }
+.ui-button:hover:not(:disabled) { filter: brightness(1.05); }
+.ui-button:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
+.ui-button:disabled { opacity: .6; cursor: not-allowed; }
+.ui-button--secondary { background: var(--white); border-color: var(--kanini-primary); color: var(--kanini-primary); }
+.ui-button--danger { background: var(--white); border-color: var(--danger); color: var(--danger); }
+.ui-button--compact { width: fit-content; height: auto; min-height: 32px; padding: var(--control-padding-compact); align-self: start; justify-self: start; font-size: .78rem; }
+input, textarea, select { min-height: var(--control-height); border: 1px solid var(--border); border-radius: var(--control-radius); background: var(--white); color: var(--kanini-text); font: inherit; padding: 8px 10px; }
+textarea { min-height: 76px; resize: vertical; } input::placeholder, textarea::placeholder { color: var(--kanini-gray); opacity: .8; } input:focus-visible, textarea:focus-visible, select:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
 /* header */
 .app-header {
   background: #041B33;

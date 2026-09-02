@@ -1,0 +1,20 @@
+.template-create { max-width: 720px; margin: 0 auto; display: grid; gap: 22px; }
+.template-create header > p:last-child { color: var(--kanini-gray); margin-top: 4px; }
+.eyebrow { margin: 0; color: var(--kanini-primary); font-size: .85rem; font-weight: 700; }
+h1 { margin: 3px 0 0; color: var(--kanini-dark); font-size: 1.55rem; }
+.upload-card { display: grid; gap: 14px; padding: 24px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); box-shadow: var(--shadow); }
+.upload-area { min-height: 190px; display: grid; place-content: center; gap: 6px; border: 2px dashed var(--border); border-radius: 8px; background: transparent; color: var(--kanini-text); cursor: pointer; font: inherit; text-align: center; }
+.upload-area:hover:not(:disabled) { border-color: var(--kanini-primary); background: var(--kanini-light); }
+.upload-area:focus-visible, .primary:focus-visible, .secondary:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
+.upload-area:disabled { cursor: wait; opacity: .7; }
+.upload-area span:last-child, .selected-file, .status { color: var(--kanini-gray); font-size: .85rem; }
+.upload-symbol { color: var(--kanini-primary); font-size: .9rem; font-weight: 700; }
+.selected-file, .status, .error { margin: 0; }
+.error { color: var(--danger); font-size: .9rem; }
+footer { display: flex; justify-content: flex-end; gap: 10px; }
+.primary, .secondary { min-height: var(--control-height); padding: var(--control-padding); border-radius: var(--control-radius); font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer; }
+.primary { border: 1px solid var(--kanini-primary); background: var(--kanini-primary); color: #fff; }
+.secondary { border: 1px solid var(--kanini-primary); background: var(--white); color: var(--kanini-primary); }
+.primary:disabled, .secondary:disabled { cursor: not-allowed; opacity: .65; }
+:host-context(.dark-theme) h1 { color: #e6edf5; }
+@media (max-width: 600px) { .upload-card { padding: 18px; } footer { flex-direction: column-reverse; } .primary, .secondary { width: 100%; } }

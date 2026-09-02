@@ -55,6 +55,12 @@ _chroma_test/
 htmlcov/
 .coverage
 *.log
+*.aux
+*.out
+*.toc
+*.synctex.gz
+~$*.docx
+docs/template-references/phase*-validation/
 
 # Node modules (for frontend)
 node_modules/

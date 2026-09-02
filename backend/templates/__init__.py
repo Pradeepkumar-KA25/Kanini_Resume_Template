@@ -1,0 +1,1 @@
+"""Template identity and metadata definitions."""

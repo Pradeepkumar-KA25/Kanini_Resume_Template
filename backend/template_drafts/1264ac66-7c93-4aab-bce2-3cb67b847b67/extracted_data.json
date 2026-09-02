@@ -1,0 +1,64 @@
+{
+  "draft_id": "1264ac66-7c93-4aab-bce2-3cb67b847b67",
+  "status": "uploaded",
+  "filename": "Black White Professional Minimalist Resume.pdf",
+  "extracted_data": {
+    "contact": {
+      "name": "Avery Davis",
+      "email": "ello@reallygreatsite.com",
+      "phone": "123-456-7890",
+      "location": "",
+      "linkedin": "",
+      "github": ""
+    },
+    "summary": "I have experience providing detailed market analysis, strategic consulting, innovative financial solutions to a wide range of clients, including government agencies, startups, and multinationals. My expertise also extends to risk management and the development of complex economic models. For me, teamwork is synonymous with success.",
+    "skills": {
+      "Other Skills": [
+        "LANGUAGES",
+        "Management",
+        "Problem-Solving",
+        "English (native)",
+        "Front/Back End Coding",
+        "Computer Literacy",
+        "Spanish (C1)",
+        "Market Research",
+        "Critical Thinking",
+        "French (B2)"
+      ]
+    },
+    "experience": [
+      {
+        "company": "018 - 2020",
+        "company_name": "018 - 2020",
+        "company_sector": "",
+        "title": "2",
+        "location": "amet, consectetur adipiscing elit.",
+        "dates": "2024- 2028",
+        "responsibilities": [
+          "Salford & Co - Data Analyst",
+          "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc sit amet sem nec risus egestas accumsan. In enim",
+          "nunc, tincidunt ut quam eget, luctus sollicitudin neque. In enim nunc, tincidunt ut quam. Lorem ipsum dolor sit"
+        ],
+        "projects": []
+      }
+    ],
+    "education": [
+      {
+        "degree": "014",
+        "institution": "Business University",
+        "year": "2017",
+        "gpa": ""
+      },
+      {
+        "degree": "Data Analysis Master’s Degree",
+        "institution": "2",
+        "year": "",
+        "gpa": ""
+      }
+    ],
+    "certifications": [],
+    "projects": [],
+    "achievements": []
+  },
+  "raw_text": "CONTACT\nAvery Davis\n+\n123-456-7890\nData Analyst\nh\nello@reallygreatsite.com\nPROFILE\nI have experience providing detailed market analysis, strategic consulting, innovative financial solutions to a\nwide range of clients, including government agencies, startups, and multinationals. My expertise also\nextends to risk management and the development of complex economic models. For me, teamwork is\nsynonymous with success.\nWORK EXPERIENCE\n2\n018 - 2020\nSalford & Co - Data Analyst\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc sit amet sem nec risus egestas accumsan. In enim\nnunc, tincidunt ut quam eget, luctus sollicitudin neque. In enim nunc, tincidunt ut quam. Lorem ipsum dolor sit\namet, consectetur adipiscing elit.\n2\n020 - 2024\nThynk Unlimited - Consultant\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc sit amet sem nec risus egestas accumsan. In enim\nnunc, tincidunt ut quam eget, luctus sollicitudin neque. In enim nunc, tincidunt ut quam. Lorem ipsum dolor sit\namet, consectetur adipiscing elit.\nWardiere Inc. - Senior Analyst\n2024- 2028\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc sit amet sem nec risus egestas accumsan. In enim\nnunc, tincidunt ut quam eget, luctus sollicitudin neque. In enim nunc, tincidunt ut quam. Lorem ipsum dolor sit\namet, consectetur adipiscing elit.\nEDUCATION\nAND TRAINING\nComputer Engineering Degree\n2\n014 - 2017\nBusiness University\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc sit amet sem nec risus egestas accumsan. In enim\nnunc, tincidunt ut quam eget, luctus sollicitudin neque.\nData Analysis Master’s Degree\n2\n019 - 2017\nBusiness University\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc sit amet sem nec risus egestas accumsan. In enim\nnunc, tincidunt ut quam eget, luctus sollicitudin neque.\nBusiness & Data Management Course\n2\n017 - 2018\nBusiness School\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc sit amet sem nec risus egestas accumsan. In enim\nnunc, tincidunt ut quam eget, luctus sollicitudin neque.\nSKILLS\nLANGUAGES\nManagement\nSKILLS\nProblem-Solving\nEnglish (native)\nFront/Back End Coding\nComputer Literacy\nSpanish (C1)\nMarket Research\nCritical Thinking\nFrench (B2)"
+}

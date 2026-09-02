@@ -1,0 +1,23 @@
+<section class="template-create" aria-labelledby="template-create-title">
+  <header>
+    <p class="eyebrow">Template management</p>
+    <h1 id="template-create-title">Create Template</h1>
+    <p>Upload a sample resume to create a reusable template inspired by its structure.</p>
+  </header>
+
+  <div class="upload-card">
+    <input #fileInput type="file" accept="application/pdf,.pdf" (change)="onInputChange($event)" hidden />
+    <button type="button" class="upload-area" (click)="browse()" [disabled]="uploading()" aria-label="Choose sample resume PDF">
+      <span class="upload-symbol" aria-hidden="true">Upload</span>
+      <strong>Choose a PDF or browse files</strong>
+      <span>PDF files only, up to 10 MB</span>
+    </button>
+    @if (selectedFile(); as file) { <p class="selected-file">Selected: {{ file.name }}</p> }
+    @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+    @if (uploading()) { <p class="status" aria-live="polite">Uploading and extracting sample resume data...</p> }
+    <footer>
+      <button type="button" class="secondary" (click)="cancelled.emit()" [disabled]="uploading()">Back</button>
+      <button type="button" class="primary" (click)="upload()" [disabled]="uploading()">{{ uploading() ? 'Uploading...' : 'Upload and Continue' }}</button>
+    </footer>
+  </div>
+</section>

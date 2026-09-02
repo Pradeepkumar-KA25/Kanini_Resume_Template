@@ -7,16 +7,14 @@ echo ==========================================================
 echo.
 
 set ROOT=%~dp0
-set PYTHON=C:/Users/IndiraEswaran/AppData/Local/Python/pythoncore-3.14-64/python.exe
-set "AUTO_LAUNCH_AFTER_BUILD=1"
+set "PYTHON=%ROOT%backend\venv\Scripts\python.exe"
+set "AUTO_LAUNCH_AFTER_BUILD=0"
 
 echo [0/8] Preparing machine for script execution...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Get-Item -LiteralPath '%~f0' | Unblock-File -ErrorAction SilentlyContinue; Get-ChildItem -LiteralPath '%ROOT%' -Recurse -File -ErrorAction SilentlyContinue | Unblock-File -ErrorAction SilentlyContinue; exit 0 } catch { exit 0 }" >nul 2>nul
 
 if not exist "%PYTHON%" (
-  echo [ERROR] Python executable not found at:
-  echo         %PYTHON%
-  exit /b 1
+  set "PYTHON=py -3"
 )
 
 echo [1/5] Installing backend dependencies...
@@ -24,7 +22,7 @@ echo [1/5] Installing backend dependencies...
 if errorlevel 1 exit /b 1
 
 echo [2/5] Installing PyInstaller...
-%PYTHON% -m pip install --user pyinstaller
+%PYTHON% -m pip install pyinstaller
 if errorlevel 1 exit /b 1
 
 echo [3/5] Building Angular frontend (production)...
@@ -46,18 +44,10 @@ if not exist "%FRONTEND_DIST%\index.html" (
 
 echo [4/5] Creating executable...
 cd /d "%ROOT%"
-%PYTHON% -m PyInstaller --noconfirm --clean --onedir --name KaniniResumeBuilder ^
-  --collect-all chromadb ^
-  --add-data "%FRONTEND_DIST%;frontend-dist" ^
-  "%ROOT%backend\main.py"
+%PYTHON% -m PyInstaller --noconfirm --clean "KaniniResumeBuilder.spec"
 if errorlevel 1 exit /b 1
 
-echo [5/6] Copying frontend assets into packaged folder...
-if not exist "%ROOT%dist\KaniniResumeBuilder\_internal\frontend-dist" mkdir "%ROOT%dist\KaniniResumeBuilder\_internal\frontend-dist"
-xcopy "%FRONTEND_DIST%\*" "%ROOT%dist\KaniniResumeBuilder\_internal\frontend-dist\" /E /I /Y /Q >nul
-if errorlevel 1 exit /b 1
-
-echo [6/7] Creating launcher batch file...
+echo [5/6] Creating launcher batch file...
 set "LAUNCHER=%ROOT%dist\KaniniResumeBuilder\Launch-KaniniResumeBuilder.bat"
 (
   echo @echo off
@@ -104,7 +94,7 @@ set "LAUNCHER=%ROOT%dist\KaniniResumeBuilder\Launch-KaniniResumeBuilder.bat"
 ) > "%LAUNCHER%"
 if errorlevel 1 exit /b 1
 
-echo [7/7] Build complete.
+echo [6/6] Build complete.
 echo.
 echo Executable folder:
 echo   %ROOT%dist\KaniniResumeBuilder

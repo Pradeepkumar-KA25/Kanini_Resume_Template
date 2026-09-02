@@ -1,0 +1,12 @@
+@page { size: letter; margin: 1in; }
+.resume-page { box-sizing: border-box; width: 8.5in; min-height: 11in; margin: 0 auto; padding: 1in; color: #000; font: 12pt/1.2 "Times New Roman", serif; background: #fff; }
+.resume-name { margin: 0 0 6pt; color: #000000; text-align: center; font: 700 12pt "Times New Roman", serif; text-transform: uppercase; }
+.resume-contact { margin: 0 0 12pt; }
+.resume-section { margin-top: 14pt; break-inside: avoid; }
+.resume-section > h2, .project-title, .responsibilities-title { margin: 0 0 4pt; color: #000000; font: 700 12pt "Times New Roman", serif; text-transform: uppercase; }
+.resume-section p { margin: 0 0 4pt; text-align: justify; }
+.resume-section ul { margin: 3pt 0 0 18pt; padding-left: 18pt; }
+.experience { margin: 5pt 0 10pt; break-inside: avoid; }
+.label-row { display: grid; grid-template-columns: 120pt 14pt minmax(0, 1fr); margin: 0 0 0 36pt; }
+.project { margin: 9pt 0 12pt; break-inside: avoid; }
+@media screen { .resume-page { box-shadow: 0 1px 5px rgb(0 0 0 / 22%); } }

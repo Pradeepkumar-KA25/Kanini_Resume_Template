@@ -1,0 +1,10 @@
+<section class="template-generation" aria-labelledby="template-generation-title">
+  <h1 id="template-generation-title">Generating Template</h1>
+  @if (loading()) {
+    <p class="status" aria-live="polite">Generating Template...</p>
+    <p>Creating a reusable design inspired by the sample resume's structure.</p>
+  } @else if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+    <div class="actions"><button type="button" class="secondary" (click)="cancelled.emit()">Back</button><button type="button" class="primary" (click)="generate()">Retry Generation</button></div>
+  }
+</section>
