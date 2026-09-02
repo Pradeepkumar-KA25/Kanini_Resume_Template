@@ -49,7 +49,11 @@ class Format2RenderService:
         section = lambda title, body: f'<section><h2>{title}</h2>{body}</section>' if body else ""
         rows = lambda pairs: "".join(f'<div class="row"><span>{key}</span><span>:</span><span>{esc(value or "-")}</span></div>' for key, value in pairs)
         skills = rows((category, ", ".join(items)) for category, items in view.resume.skills.items())
-        experience = "".join(rows((("Company Name", item.company_name or item.company_sector or item.company), ("Designation", item.title), ("Duration", item.dates))) for item in view.resume.experience)
+        experience = "".join(
+            f'<article>{rows((("Company Name", item.company_name or item.company_sector or item.company), ("Designation", item.title), ("Duration", item.dates)))}'
+            f'{f"<ul>{''.join(f'<li>{esc(responsibility)}</li>' for responsibility in item.responsibilities)}</ul>" if item.responsibilities else ""}</article>'
+            for item in view.resume.experience
+        )
         projects = "".join(f'<article><h3>{view.project_label(index)}</h3>{rows((("Client", project.client), ("Technical Stack", ", ".join(project.technologies)), ("Role", project.role)))}{f"<h4>Description of Project:</h4><p>{esc(project.description)}</p>" if project.description else ""}{f"<h4>Roles and Responsibilities:</h4><ul>{''.join(f'<li>{esc(item)}</li>' for item in project.responsibilities)}</ul>" if project.responsibilities else ""}</article>' for index, project in enumerate(view.projects, 1))
         education = "".join(f"<p>{esc(' '.join(filter(None, (item.degree, item.year, item.institution, item.gpa))))}</p>" for item in view.resume.education)
         summary = "".join(f"<p>{esc(item)}</p>" for item in view.resume.summary.splitlines() if item)
@@ -59,7 +63,11 @@ class Format2RenderService:
         lines = [r"\begin{center}\textbf{" + escape_latex(view.name.upper()) + r"}\end{center}"]
         self._section(lines, "Professional Summary:", view.resume.summary.splitlines())
         self._section(lines, "Technical Skills:", [], rows=[(key, ", ".join(value)) for key, value in view.resume.skills.items()])
-        self._section(lines, "Working Experience:", [], rows=[pair for entry in view.resume.experience for pair in (("Company Name", entry.company_name or entry.company_sector or entry.company), ("Designation", entry.title), ("Duration", entry.dates))])
+        if view.resume.experience:
+            lines.append(r"\KaniniSection{Working Experience:}")
+            for entry in view.resume.experience:
+                self._rows(lines, [("Company Name", entry.company_name or entry.company_sector or entry.company), ("Designation", entry.title), ("Duration", entry.dates)])
+                self._items(lines, entry.responsibilities)
         if view.projects:
             lines.append(r"\KaniniSection{Project Summary:}")
             for index, project in enumerate(view.projects, 1):
@@ -87,4 +95,6 @@ class Format2RenderService:
 
     @staticmethod
     def _items(lines, values):
-        lines.append(r"\begin{itemize}"); lines.extend(r"\item " + escape_latex(value) for value in values if value); lines.append(r"\end{itemize}")
+        values = [value for value in values if value]
+        if values:
+            lines.append(r"\begin{itemize}"); lines.extend(r"\item " + escape_latex(value) for value in values); lines.append(r"\end{itemize}")
