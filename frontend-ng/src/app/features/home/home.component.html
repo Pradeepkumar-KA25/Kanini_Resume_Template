@@ -1,0 +1,27 @@
+<section class="home" aria-labelledby="home-title">
+  <div class="home-welcome">
+    <p class="home-eyebrow">Resume Builder</p>
+    <h1 id="home-title">Create, customize, and manage your professional resumes with ease.</h1>
+  </div>
+
+  <div class="home-actions">
+    <article class="home-card">
+      <span class="home-icon document-icon" aria-hidden="true"></span>
+      <h2>Create Resume</h2>
+      <p>Create a new professional resume from scratch.</p>
+      <button type="button" class="ui-button" (click)="createResume.emit()">Create Resume</button>
+    </article>
+    <article class="home-card">
+      <span class="home-icon saved-icon" aria-hidden="true"></span>
+      <h2>My Resumes</h2>
+      <p>View, edit, and manage your saved resumes.</p>
+      <button type="button" class="ui-button" (click)="viewResumes.emit()">View Resumes</button>
+    </article>
+    <article class="home-card">
+      <span class="home-icon template-icon" aria-hidden="true"></span>
+      <h2>Create Template</h2>
+      <p>Create and customize your own resume template.</p>
+      <button type="button" class="ui-button" (click)="createTemplate.emit()">Create Template</button>
+    </article>
+  </div>
+</section>

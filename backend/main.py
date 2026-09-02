@@ -17,7 +17,8 @@ from pathlib import Path
 from typing import Dict, Any, Tuple
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
-from fastapi.responses import FileResponse, JSONResponse
+from pydantic import BaseModel
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
@@ -34,8 +35,20 @@ from template_generator import (
 )
 import ai_parser
 import vector_store
+from services.resume_adapter import ResumeAdapter
+from services.resume_normalization import normalise_resume, validate_resume
+from services.template_generation_service import TemplateGenerationError, generate_template_spec
+from services.template_validation_service import TemplateSpecValidationError, validate_template_spec
+from services.user_template_store import UserTemplateValidationError, delete_user_template, describe_template_spec, load_user_template, save_user_template, update_user_template, validate_template_description, validate_template_name
+from models.resume import ResumeData
+from templates.registry import TemplateNotFoundError, TemplateRegistry
+from renderers import RendererFactory
+from renderers.base import LatexUnavailableError
+from renderers.template_draft_renderer import render_template_draft_preview
 
 app = FastAPI(title="Kanini Resume Builder API", version="1.0.0")
+TEMPLATE_REGISTRY = TemplateRegistry.discover()
+RENDERER_FACTORY = RendererFactory(TEMPLATE_REGISTRY)
 
 logger = logging.getLogger("kanini.resume")
 PDF_DEBUG_ENABLED = os.getenv("PDF_PARSE_DEBUG", "0").strip().lower() in {"1", "true", "yes", "on"}
@@ -53,6 +66,30 @@ app.add_middleware(
 SESSIONS: Dict[str, Dict[str, Any]] = {}
 TEMP_DIR = Path(tempfile.gettempdir()) / "kanini_resume_builder"
 TEMP_DIR.mkdir(parents=True, exist_ok=True)
+TEMPLATE_DRAFT_DIR = Path(__file__).resolve().parent / "template_drafts"
+TEMPLATE_DRAFT_DIR.mkdir(parents=True, exist_ok=True)
+USER_TEMPLATES_DIR = Path(__file__).resolve().parent / "user_templates"
+USER_TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
+
+
+class RenderRequest(BaseModel):
+    template_id: str
+    output_format: str = "html"
+
+
+class SaveTemplateDraftRequest(BaseModel):
+    template_name: str
+    description: str
+
+
+class UpdateUserTemplateRequest(BaseModel):
+    template_name: str
+    description: str
+    template_spec: dict[str, Any]
+
+
+class SelectedTemplateRequest(BaseModel):
+    template_id: str
 
 
 def _configure_pdf_debug_logging() -> None:
@@ -588,11 +625,27 @@ def _should_fallback_on_strict_ai_error(err: Exception) -> bool:
 
 
 def _template_download_name(template_id: str) -> str:
-    if template_id == "template1":
-        return "Kanini_Format_Profile"
-    if template_id == "template2":
-        return "Kanini_Format2_Profile"
-    return "resume"
+    template = TEMPLATE_REGISTRY.get(template_id)
+    return template.display_name if template.user_created else template.download_base_name
+
+
+def _safe_filename_component(value: str, fallback: str) -> str:
+    cleaned = re.sub(r"[^a-zA-Z0-9]+", "_", str(value or "").strip()).strip("_")
+    return cleaned or fallback
+
+
+def _ensure_resume_name(resume_data: Dict[str, Any], filename: str = "") -> None:
+    contact = resume_data.setdefault("contact", {})
+    if str(contact.get("name") or "").strip():
+        return
+    fallback = Path(filename).stem if filename else "Untitled Resume"
+    contact["name"] = re.sub(r"[_-]+", " ", fallback).strip()[:80] or "Untitled Resume"
+
+
+def _reload_template_registry() -> None:
+    global TEMPLATE_REGISTRY, RENDERER_FACTORY
+    TEMPLATE_REGISTRY = TemplateRegistry.discover(user_templates_dir=USER_TEMPLATES_DIR)
+    RENDERER_FACTORY = RendererFactory(TEMPLATE_REGISTRY)
 
 
 def _generate_session_artifacts(session_id: str, resume_data: Dict[str, Any], filename: str = "") -> Dict[str, Any]:
@@ -612,31 +665,25 @@ def _generate_session_artifacts(session_id: str, resume_data: Dict[str, Any], fi
             t1_pdf = str(session_dir / "kanini_classic.pdf")
             t2_pdf = str(session_dir / "deloitte_format.pdf")
 
-            generate_template1(resume_data, t1_docx)
-            generate_template_deloitte(resume_data, t2_docx)
+            canonical_resume = ResumeAdapter.from_legacy(resume_data)
+            format1_renderer = RENDERER_FACTORY.get("kanini-format-1")
+            format2_renderer = RENDERER_FACTORY.get("kanini-format-2")
+            format1_html = format1_renderer.render_html(canonical_resume).content or ""
+            format2_html = format2_renderer.render_html(canonical_resume).content or ""
 
             preview_html = {
-                "template1": generate_preview_html_template1(resume_data),
-                "template2": generate_preview_html_deloitte(resume_data),
+                "template1": format1_html,
+                "template2": format2_html,
             }
-
-            # Generate PDFs from HTML previews using PyMuPDF. The logo is added
-            # to the download PDFs but kept out of the on-screen preview.
-            download_html = {
-                "template1": _inject_logo_into_html(preview_html["template1"], "t1-logo"),
-                "template2": _inject_logo_into_html(preview_html["template2"], "kf-logo"),
-            }
-            convert_html_to_pdf(download_html["template1"], t1_pdf)
-            convert_html_to_pdf(download_html["template2"], t2_pdf)
 
             return {
                 "resume_data": resume_data,
                 "filename": filename,
                 "files": {
-                    "template1_docx": t1_docx,
-                    "template2_docx": t2_docx,
-                    "template1_pdf": t1_pdf,
-                    "template2_pdf": t2_pdf,
+                    "template1_docx": "",
+                    "template2_docx": "",
+                    "template1_pdf": "",
+                    "template2_pdf": "",
                 },
                 "preview_html": preview_html,
             }
@@ -1245,8 +1292,8 @@ def _summary_quality_score(summary: Any) -> int:
 
 def _pick_better_pdf_sections(ai_data: Dict[str, Any], regex_data: Dict[str, Any]) -> Dict[str, Any]:
     """For PDF uploads, blend AI and regex outputs by section quality."""
-    ai_norm = _normalise_resume_data(dict(ai_data), raw_text="")
-    rx_norm = _normalise_resume_data(dict(regex_data), raw_text="")
+    ai_norm = ResumeAdapter.to_legacy(normalise_resume(ResumeAdapter.from_legacy(ai_data)))
+    rx_norm = ResumeAdapter.to_legacy(normalise_resume(ResumeAdapter.from_legacy(regex_data)))
 
     # Keep AI as base for narrative fields, but override sections that are clearly
     # better in regex output for noisy PDF extraction.
@@ -1567,178 +1614,6 @@ def _finalise_experience_entries(exps: list[Dict[str, Any]]) -> list[Dict[str, A
     return cleaned_entries
 
 
-def _normalise_resume_data(data: Dict[str, Any], raw_text: str = "") -> Dict[str, Any]:
-    """Post-process parsed data so both templates render cleanly and consistently."""
-    if not isinstance(data, dict):
-        return data
-
-    # Summary cleanup
-    summary = str(data.get("summary") or "").strip()
-    summary = re.sub(r"^[\s\u2022\u2023\u25E6\u2043\u2219\-*]+\s*", "", summary, flags=re.MULTILINE)
-    summary = _clean_summary_text(summary)
-    if _summary_is_weak(summary) and raw_text:
-        recovered_summary = _recover_summary_from_raw_text(raw_text)
-        if recovered_summary:
-            summary = _clean_summary_text(recovered_summary)
-    data["summary"] = summary
-
-    # Pre-normalize experience first so we can use these values to filter
-    # leaked experience text from skills.
-    exps = data.get("experience")
-    if isinstance(exps, list):
-        for exp in exps:
-            if not isinstance(exp, dict):
-                continue
-            _normalise_experience_entry(exp)
-            responsibilities = exp.get("responsibilities")
-            if isinstance(responsibilities, list):
-                cleaned = []
-                for r in responsibilities:
-                    txt = re.sub(r"^[\s\u2022\u2023\u25E6\u2043\u2219\-*]+\s*", "", str(r or "").strip())
-                    if txt:
-                        cleaned.append(txt)
-                exp["responsibilities"] = _dedupe_keep_order(cleaned)
-        data["experience"] = _finalise_experience_entries(_merge_experience_fragments(exps))
-
-    if _experience_is_broken(data.get("experience")) and raw_text:
-        recovered_experience = _recover_experience_from_raw_text(raw_text)
-        if recovered_experience:
-            data["experience"] = _finalise_experience_entries(recovered_experience)
-
-    banned_skill_terms: list[str] = []
-    contact = data.get("contact") if isinstance(data.get("contact"), dict) else {}
-    if contact:
-        banned_skill_terms.extend([
-            str(contact.get("name") or "").strip(),
-            str(contact.get("email") or "").strip(),
-            str(contact.get("phone") or "").strip(),
-        ])
-    for exp in data.get("experience", []) if isinstance(data.get("experience"), list) else []:
-        if isinstance(exp, dict):
-            banned_skill_terms.extend([
-                str(exp.get("company") or "").strip(),
-                str(exp.get("title") or "").strip(),
-                str(exp.get("location") or "").strip(),
-            ])
-
-    # Skills cleanup: merge duplicate categories, split noisy tokens and
-    # remove non-skill fragments that leaked from other sections.
-    skills = data.get("skills")
-    if isinstance(skills, dict):
-        merged = {}
-        for raw_cat, raw_items in skills.items():
-            cat = str(raw_cat or "").strip().rstrip(":") or "Technical Skills"
-            items = raw_items if isinstance(raw_items, list) else [raw_items]
-            cleaned_items = []
-            for item in items:
-                for token in _tokenize_skill_text(item):
-                    token = token.strip().rstrip(":")
-                    if token and not _looks_like_skill_noise(token, banned_skill_terms):
-                        cleaned_items.append(token)
-
-            if not cleaned_items:
-                continue
-
-            target_cat = None
-            for existing in merged:
-                if existing.casefold() == cat.casefold():
-                    target_cat = existing
-                    break
-            if target_cat is None:
-                target_cat = cat
-                merged[target_cat] = []
-
-            merged[target_cat].extend(cleaned_items)
-
-        data["skills"] = {k: _dedupe_keep_order(v) for k, v in merged.items() if _dedupe_keep_order(v)}
-
-    # Certifications / achievements cleanup
-    for key in ("certifications", "achievements"):
-        vals = data.get(key)
-        if isinstance(vals, list):
-            data[key] = _dedupe_keep_order(vals)
-
-    # Education cleanup: drop institution lines that are clearly project/action text.
-    education = data.get("education")
-    if isinstance(education, list):
-        cleaned_education = []
-        for edu in education:
-            if not isinstance(edu, dict):
-                continue
-            degree = str(edu.get("degree") or "").strip()
-            institution = str(edu.get("institution") or "").strip()
-            year = str(edu.get("year") or "").strip()
-            gpa = str(edu.get("gpa") or "").strip()
-
-            if institution and (_EDU_NOISE_RE.search(institution) or len(institution.split()) > 14):
-                institution = ""
-
-            if degree or institution or year or gpa:
-                cleaned_education.append({
-                    "degree": degree,
-                    "institution": institution,
-                    "year": year,
-                    "gpa": gpa,
-                })
-        data["education"] = cleaned_education
-
-    # Project cleanup: remove obviously misparsed project blobs.
-    projects = data.get("projects")
-    if isinstance(projects, list):
-        cleaned_projects = []
-        for project in projects:
-            if not isinstance(project, dict):
-                continue
-            if _project_looks_noisy(project):
-                continue
-            cleaned_projects.append(project)
-        data["projects"] = cleaned_projects
-
-    return data
-
-
-def _looks_like_valid_resume(data: Dict[str, Any], raw_text: str) -> Tuple[bool, str]:
-    """Basic structural validation for uploaded resume content.
-
-    Returns (is_valid, reason_message).
-    """
-    if not raw_text or len(re.sub(r"\s+", "", raw_text)) < 40:
-        return False, "Could not extract readable text from the file (too little content or unreadable format)."
-
-    contact = data.get("contact") if isinstance(data, dict) else {}
-    email = str((contact or {}).get("email") or "").strip()
-    phone = str((contact or {}).get("phone") or "").strip()
-
-    # Fallback: scan raw text directly if structured parser missed email/phone.
-    if not email or not phone:
-        email_re = re.compile(r"[\w.+-]+@[\w-]+\.[a-zA-Z]{2,}")
-        phone_re = re.compile(r"(?:\+?\d{1,3}[\s\-.]?)?(?:\(?\d{3}\)?[\s\-.]?)?\d{3}[\s\-.]?\d{4}")
-        if not email:
-            m = email_re.search(raw_text)
-            if m:
-                email = m.group(0).strip()
-                if isinstance(contact, dict):
-                    contact["email"] = email
-        if not phone:
-            m = phone_re.search(re.sub(r"\d{4}[-–]\d{4}", "", raw_text))
-            if m:
-                phone = m.group(0).strip()
-                if isinstance(contact, dict):
-                    contact["phone"] = phone
-
-    has_email = bool(email)
-    has_phone = bool(phone)
-
-    if not has_email and not has_phone:
-        return False, "Could not find an email address or phone number in the resume."
-    if not has_email:
-        return False, "Could not find an email address in the resume."
-    if not has_phone:
-        return False, "Could not find a phone number in the resume."
-
-    return True, ""
-
-
 def _frontend_dist_dir() -> Path | None:
     """Locate built Angular assets for local and packaged (PyInstaller) runs."""
     backend_dir = Path(__file__).resolve().parent
@@ -1776,6 +1651,218 @@ async def health():
 async def llm_models():
     """Return model dropdown options with availability flags."""
     return {"models": ai_parser.get_model_dropdown_options()}
+
+
+@app.get("/api/templates")
+async def list_templates():
+    """Return enabled template metadata without filesystem implementation details."""
+    return {"templates": [template.public_dict() for template in TEMPLATE_REGISTRY.list_enabled()]}
+
+
+@app.post("/api/template-drafts")
+async def create_template_draft(file: UploadFile = File(...)):
+    """Store a sample PDF and extract normalized content for later template generation."""
+    filename = file.filename or ""
+    if not filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="A sample resume must be a PDF file.")
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=422, detail="The uploaded PDF is empty.")
+    if len(content) > MAX_FILE_SIZE_BYTES:
+        raise HTTPException(status_code=413, detail="File too large (max 10 MB).")
+
+    draft_id = str(uuid.uuid4())
+    draft_dir = TEMPLATE_DRAFT_DIR / draft_id
+    try:
+        draft_dir.mkdir(parents=True, exist_ok=False)
+        source_path = draft_dir / "original.pdf"
+        source_path.write_bytes(content)
+        raw_text = extract_text(str(source_path), "pdf")
+        if not raw_text.strip():
+            raise ValueError("Could not extract readable text from the PDF.")
+
+        parsed = ResumeAdapter.adapt_regex_output(parse_resume(str(source_path), "pdf"))
+        extracted_data = ResumeAdapter.to_legacy(normalise_resume(parsed, raw_text=raw_text))
+        draft_payload = {
+            "draft_id": draft_id,
+            "status": "uploaded",
+            "filename": filename,
+            "extracted_data": extracted_data,
+            "raw_text": raw_text,
+        }
+        (draft_dir / "extracted_data.json").write_text(json.dumps(draft_payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    except ValueError as exc:
+        shutil.rmtree(draft_dir, ignore_errors=True)
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:
+        shutil.rmtree(draft_dir, ignore_errors=True)
+        logger.error("Template draft upload failed: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail="Unable to create template draft.") from exc
+
+    return {
+        "draft_id": draft_id,
+        "status": "uploaded",
+        "filename": filename,
+        "extracted_data": extracted_data,
+    }
+
+
+@app.post("/api/template-drafts/{draft_id}/generate")
+async def generate_template_draft(draft_id: str):
+    """Generate and validate a non-executable template draft from uploaded resume data."""
+    try:
+        normalized_draft_id = str(uuid.UUID(draft_id))
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="Template draft was not found.") from exc
+
+    draft_dir = TEMPLATE_DRAFT_DIR / normalized_draft_id
+    extracted_path = draft_dir / "extracted_data.json"
+    if not draft_dir.is_dir() or not extracted_path.is_file():
+        raise HTTPException(status_code=404, detail="Template draft was not found.")
+
+    try:
+        draft_data = json.loads(extracted_path.read_text(encoding="utf-8"))
+        extracted_data = draft_data["extracted_data"]
+        if not isinstance(extracted_data, dict):
+            raise ValueError("Draft data is invalid.")
+    except (OSError, json.JSONDecodeError, KeyError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail="Template draft data is invalid.") from exc
+
+    try:
+        generated = await asyncio.wait_for(run_in_threadpool(generate_template_spec, extracted_data), timeout=95)
+        spec = validate_template_spec(generated)
+        canonical_resume = ResumeAdapter.from_legacy(extracted_data)
+        preview_html = render_template_draft_preview(canonical_resume, spec)
+        (draft_dir / "template_spec.json").write_text(json.dumps(spec.model_dump(), indent=2), encoding="utf-8")
+        (draft_dir / "preview.html").write_text(preview_html, encoding="utf-8")
+    except asyncio.TimeoutError as exc:
+        raise HTTPException(status_code=504, detail="Template generation timed out. Please try again.") from exc
+    except ai_parser.ProviderUnavailableError as exc:
+        raise HTTPException(status_code=503, detail="Ollama is unavailable. Check that the configured model is running.") from exc
+    except (TemplateGenerationError, TemplateSpecValidationError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.error("Template draft generation failed for %s: %s", normalized_draft_id, exc, exc_info=True)
+        raise HTTPException(status_code=500, detail="Unable to generate the template draft. Please try again.") from exc
+
+    return {
+        "draft_id": normalized_draft_id,
+        "status": "generated",
+        "filename": str(draft_data.get("filename") or "sample.pdf"),
+        "extracted_data": extracted_data,
+        "template_spec": spec.model_dump(),
+        "suggested_description": describe_template_spec(spec),
+        "preview_html": preview_html,
+    }
+
+
+@app.post("/api/template-drafts/{draft_id}/save")
+async def save_template_draft(draft_id: str, request: SaveTemplateDraftRequest):
+    """Persist a validated generated draft as a user template package without registry registration."""
+    try:
+        normalized_draft_id = str(uuid.UUID(draft_id))
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="Template draft was not found.") from exc
+
+    spec_path = TEMPLATE_DRAFT_DIR / normalized_draft_id / "template_spec.json"
+    if not spec_path.is_file():
+        raise HTTPException(status_code=404, detail="Generated template draft was not found.")
+    try:
+        spec = validate_template_spec(json.loads(spec_path.read_text(encoding="utf-8")))
+        name = validate_template_name(request.template_name)
+        description = validate_template_description(request.description)
+        saved = save_user_template(USER_TEMPLATES_DIR, spec, name, description, TEMPLATE_DRAFT_DIR / normalized_draft_id)
+        _reload_template_registry()
+        return saved
+    except (OSError, json.JSONDecodeError, TemplateSpecValidationError) as exc:
+        raise HTTPException(status_code=422, detail="Generated template specification is invalid.") from exc
+    except UserTemplateValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.error("Template draft save failed for %s: %s", normalized_draft_id, exc, exc_info=True)
+        raise HTTPException(status_code=500, detail="Unable to save the template. Please try again.") from exc
+
+
+def _user_template_detail(template_id: str) -> tuple[dict, Any, Path]:
+    try:
+        return load_user_template(USER_TEMPLATES_DIR, template_id)
+    except UserTemplateValidationError as exc:
+        raise HTTPException(status_code=404, detail="User template was not found.") from exc
+
+
+@app.get("/api/user-templates/{template_id}")
+async def get_user_template(template_id: str):
+    manifest, spec, package = _user_template_detail(template_id)
+    return {"template_id": template_id, "display_name": manifest["display_name"], "description": manifest["description"], "template_spec": spec.model_dump(), "has_source": (package / "original.pdf").is_file()}
+
+
+@app.put("/api/user-templates/{template_id}")
+async def update_saved_user_template(template_id: str, request: UpdateUserTemplateRequest):
+    _user_template_detail(template_id)
+    try:
+        result = update_user_template(USER_TEMPLATES_DIR, template_id, validate_template_spec(request.template_spec), validate_template_name(request.template_name), validate_template_description(request.description))
+        _reload_template_registry()
+        return result
+    except (TemplateSpecValidationError, UserTemplateValidationError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.delete("/api/user-templates/{template_id}")
+async def delete_saved_user_template(template_id: str):
+    _user_template_detail(template_id)
+    try:
+        delete_user_template(USER_TEMPLATES_DIR, template_id)
+        _reload_template_registry()
+    except UserTemplateValidationError as exc:
+        raise HTTPException(status_code=404, detail="User template was not found.") from exc
+    return {"template_id": template_id, "status": "deleted"}
+
+
+@app.post("/api/user-templates/{template_id}/regenerate")
+async def regenerate_user_template(template_id: str):
+    manifest, _, package = _user_template_detail(template_id)
+    source = package / "original.pdf"
+    if not source.is_file():
+        raise HTTPException(status_code=409, detail="This template has no retained sample PDF for regeneration.")
+    try:
+        raw_text = extract_text(str(source), "pdf")
+        extracted = ResumeAdapter.to_legacy(normalise_resume(ResumeAdapter.adapt_regex_output(parse_resume(str(source), "pdf")), raw_text=raw_text))
+        spec = validate_template_spec(await asyncio.wait_for(run_in_threadpool(generate_template_spec, extracted), timeout=95))
+        preview = render_template_draft_preview(ResumeAdapter.from_legacy(extracted), spec)
+        (package / "regeneration_spec.json").write_text(json.dumps(spec.model_dump(), indent=2), encoding="utf-8")
+        (package / "regeneration_preview.html").write_text(preview, encoding="utf-8")
+        return {"template_id": template_id, "display_name": manifest["display_name"], "template_spec": spec.model_dump(), "preview_html": preview, "status": "regenerated"}
+    except (ai_parser.ProviderUnavailableError, asyncio.TimeoutError):
+        raise HTTPException(status_code=503, detail="Template regeneration is currently unavailable. Please try again.")
+    except Exception as exc:
+        logger.error("Template regeneration failed for %s: %s", template_id, exc, exc_info=True)
+        raise HTTPException(status_code=422, detail="Unable to generate a new template draft.") from exc
+
+
+@app.post("/api/user-templates/{template_id}/regenerate/confirm")
+async def confirm_user_template_regeneration(template_id: str):
+    _, _, package = _user_template_detail(template_id)
+    candidate = package / "regeneration_spec.json"
+    if not candidate.is_file():
+        raise HTTPException(status_code=404, detail="Regenerated template draft was not found.")
+    try:
+        spec = validate_template_spec(json.loads(candidate.read_text(encoding="utf-8")))
+        (package / "template-spec.json").write_text(json.dumps(spec.model_dump(), indent=2), encoding="utf-8")
+        candidate.unlink(missing_ok=True)
+        (package / "regeneration_preview.html").unlink(missing_ok=True)
+        _reload_template_registry()
+    except (OSError, json.JSONDecodeError, TemplateSpecValidationError) as exc:
+        raise HTTPException(status_code=422, detail="Regenerated template specification is invalid.") from exc
+    return {"template_id": template_id, "status": "updated"}
+
+
+@app.delete("/api/user-templates/{template_id}/regenerate")
+async def cancel_user_template_regeneration(template_id: str):
+    _, _, package = _user_template_detail(template_id)
+    (package / "regeneration_spec.json").unlink(missing_ok=True)
+    (package / "regeneration_preview.html").unlink(missing_ok=True)
+    return {"template_id": template_id, "status": "cancelled"}
 
 
 @app.post("/api/upload")
@@ -1827,7 +1914,9 @@ async def upload_resume(file: UploadFile = File(...), llm_model: str = Form("aut
     # select better sections instead of trusting one parser blindly.
     if ext == "pdf":
         try:
-            regex_data = parse_resume(str(upload_path), ext)
+            regex_data = ResumeAdapter.to_legacy(
+                ResumeAdapter.adapt_regex_output(parse_resume(str(upload_path), ext))
+            )
         except Exception:
             regex_data = None
 
@@ -1844,6 +1933,7 @@ async def upload_resume(file: UploadFile = File(...), llm_model: str = Form("aut
 
     try:
         resume_data, llm_used = ai_parser.parse_resume_with_ai(raw_text, llm_model)
+        resume_data = ResumeAdapter.to_legacy(ResumeAdapter.adapt_ai_output(resume_data))
     except Exception as ai_err:
         print(f"[AI parser fallback] {ai_err}")
         llm_used = "regex"
@@ -1851,7 +1941,9 @@ async def upload_resume(file: UploadFile = File(...), llm_model: str = Form("aut
 
     if resume_data is None:
         try:
-            resume_data = regex_data if regex_data is not None else parse_resume(str(upload_path), ext)
+            resume_data = regex_data if regex_data is not None else ResumeAdapter.to_legacy(
+                ResumeAdapter.adapt_regex_output(parse_resume(str(upload_path), ext))
+            )
         except Exception:
             shutil.rmtree(session_dir, ignore_errors=True)
             raise HTTPException(status_code=422, detail=INVALID_RESUME_MSG)
@@ -1899,7 +1991,8 @@ async def upload_resume(file: UploadFile = File(...), llm_model: str = Form("aut
         except Exception as blend_err:
             print(f"[PDF hybrid parse warning] {blend_err}")
 
-    resume_data = _normalise_resume_data(resume_data, raw_text=raw_text)
+    canonical_resume = normalise_resume(ResumeAdapter.from_legacy(resume_data), raw_text=raw_text)
+    resume_data = ResumeAdapter.to_legacy(canonical_resume)
     _enrich_experience_with_company_sectors(resume_data, raw_text=raw_text)
     if ext == "pdf":
         _log_pdf_debug(
@@ -1910,7 +2003,10 @@ async def upload_resume(file: UploadFile = File(...), llm_model: str = Form("aut
             session_id=session_id,
             filename=filename,
         )
-    is_valid, invalid_reason = _looks_like_valid_resume(resume_data, raw_text)
+    canonical_resume = normalise_resume(ResumeAdapter.from_legacy(resume_data))
+    is_valid, invalid_reason = validate_resume(canonical_resume, raw_text)
+    resume_data = ResumeAdapter.to_legacy(canonical_resume)
+    _ensure_resume_name(resume_data, filename)
     if not is_valid:
         print(f"[upload rejected] reason={invalid_reason}")
         shutil.rmtree(session_dir, ignore_errors=True)
@@ -1927,6 +2023,7 @@ async def upload_resume(file: UploadFile = File(...), llm_model: str = Form("aut
     # Store session
     SESSIONS[session_id] = {
         "resume_data": artifacts["resume_data"],
+        "review_data": resume_data,
         "files": artifacts["files"],
         "filename": filename,
     }
@@ -2006,6 +2103,7 @@ async def get_saved_resume(resume_id: str):
 
     SESSIONS[resume_id] = {
         "resume_data": artifacts["resume_data"],
+        "review_data": resume_data,
         "files": artifacts["files"],
         "filename": artifacts.get("filename", ""),
     }
@@ -2013,8 +2111,83 @@ async def get_saved_resume(resume_id: str):
     return JSONResponse({
         "session_id": resume_id,
         "resume_data": artifacts["resume_data"],
+        "selected_template_id": resume_data.get("selected_template_id", ""),
         "preview_html": artifacts["preview_html"],
     })
+
+
+def _get_review_session(session_id: str) -> Dict[str, Any]:
+    session = SESSIONS.get(session_id)
+    if not session or not isinstance(session.get("review_data"), dict):
+        raise HTTPException(status_code=404, detail="Review session not found or expired.")
+    return session
+
+
+@app.get("/api/resumes/{session_id}/review")
+async def get_review_data(session_id: str):
+    """Return only the canonical editable data for an active upload session."""
+    session = _get_review_session(session_id)
+    return {"session_id": session_id, "resume_data": ResumeAdapter.from_legacy(session["review_data"]).model_dump()}
+
+
+@app.put("/api/resumes/{session_id}/review")
+async def update_review_data(session_id: str, resume: ResumeData):
+    """Persist user-reviewed data and regenerate the current session artifacts."""
+    session = _get_review_session(session_id)
+    reviewed = normalise_resume(resume)
+    is_valid, reason = validate_resume(reviewed)
+    if not is_valid:
+        raise HTTPException(status_code=422, detail=f"Invalid reviewed resume: {reason}")
+    full_data = ResumeAdapter.to_legacy(reviewed)
+    previous = session.get("review_data") if isinstance(session.get("review_data"), dict) else {}
+    full_data["additional_sections"] = previous.get("additional_sections", {})
+    for index, experience in enumerate(full_data.get("experience", [])):
+        if index < len(previous.get("experience", [])) and isinstance(previous["experience"][index], dict):
+            existing = previous["experience"][index]
+            experience["location"] = existing.get("location", experience.get("location", ""))
+            experience["company_sector"] = existing.get("company_sector", experience.get("company_sector", ""))
+    full_data["selected_template_id"] = previous.get("selected_template_id", "")
+    _ensure_resume_name(full_data, session.get("filename", ""))
+    try:
+        artifacts = _generate_session_artifacts(session_id, _anonymise_resume_for_template(full_data), session.get("filename", ""))
+    except Exception as exc:
+        logger.error("review regeneration failed for %s: %s", session_id, exc, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to regenerate resume artifacts.") from exc
+    session.update({"review_data": full_data, "resume_data": artifacts["resume_data"], "files": artifacts["files"]})
+    _persist_resume(session_id, full_data, session.get("filename", ""))
+    return {"session_id": session_id, "resume_data": artifacts["resume_data"], "preview_html": artifacts["preview_html"]}
+
+
+@app.put("/api/resumes/{session_id}/template")
+async def update_selected_template(session_id: str, request: SelectedTemplateRequest):
+    session = _get_review_session(session_id)
+    try:
+        template = TEMPLATE_REGISTRY.get(request.template_id)
+    except TemplateNotFoundError as exc:
+        raise HTTPException(status_code=400, detail="Selected template is unavailable. Please choose another template.") from exc
+    full_data = dict(session["review_data"])
+    full_data["selected_template_id"] = template.id
+    session["review_data"] = full_data
+    _persist_resume(session_id, full_data, session.get("filename", ""))
+    return {"session_id": session_id, "template_id": template.id}
+
+
+@app.post("/api/resumes/{session_id}/render")
+async def render_reviewed_resume(session_id: str, request: RenderRequest):
+    """Resolve a selected template through the registry and return its preview/download reference."""
+    session = _get_review_session(session_id)
+    try:
+        template = TEMPLATE_REGISTRY.get(request.template_id)
+    except TemplateNotFoundError as exc:
+        raise HTTPException(status_code=400, detail="Invalid template ID.") from exc
+    if not template.enabled or request.output_format not in template.supported_outputs:
+        raise HTTPException(status_code=400, detail="Requested template output is unavailable.")
+    alias = template.aliases[0] if template.aliases else template.id
+    if request.output_format == "html":
+        html_generator = RENDERER_FACTORY.get(template.id).render_html
+        preview = html_generator(ResumeAdapter.from_legacy(session["resume_data"])).content or ""
+        return {"session_id": session_id, "template_id": template.id, "output_format": "html", "preview_html": preview}
+    return {"session_id": session_id, "template_id": template.id, "output_format": request.output_format, "download_url": f"/api/download/{session_id}/{alias}/{request.output_format}"}
 
 
 @app.delete("/api/resumes/{resume_id}")
@@ -2057,52 +2230,66 @@ async def download_file(session_id: str, template_id: str, fmt: str):
         else:
             raise HTTPException(status_code=404, detail="Session not found or expired.")
 
-    if template_id not in ("template1", "template2"):
-        raise HTTPException(status_code=400, detail="Invalid template ID.")
+    try:
+        template = TEMPLATE_REGISTRY.get(template_id)
+    except TemplateNotFoundError as exc:
+        raise HTTPException(status_code=400, detail="Invalid template ID.") from exc
 
-    if fmt not in ("docx", "pdf"):
-        raise HTTPException(status_code=400, detail="Format must be 'docx' or 'pdf'.")
+    if fmt not in template.supported_outputs:
+        raise HTTPException(status_code=400, detail=f"Template does not support '{fmt}' output.")
+
+    # Generated artifacts retain legacy keys until renderer migration.
+    template_id = template.aliases[0] if template.aliases else template.id
 
     session = SESSIONS[session_id]
+    raw_candidate_name = str(session.get("resume_data", {}).get("contact", {}).get("name", "") or "").strip()
+    candidate_name = _safe_filename_component(raw_candidate_name, "resume")
+    template_name = _safe_filename_component(_template_download_name(template_id), "template")
+    if not template.user_created:
+        candidate_name = candidate_name.lower()
+    download_stem = f"{candidate_name}_{template_name}" if template.user_created else f"{template_name}_{candidate_name}"
+
+    if fmt == "html":
+        try:
+            content = RENDERER_FACTORY.get(template.id).render_html(ResumeAdapter.from_legacy(session["resume_data"])).content or ""
+        except Exception as exc:
+            logger.error("HTML download rendering failed for session=%s: %s", session_id, exc, exc_info=True)
+            raise HTTPException(status_code=500, detail="Failed to generate HTML.") from exc
+        return HTMLResponse(content=content, headers={"Content-Disposition": f'attachment; filename="{download_stem}.html"'})
+
     docx_key = f"{template_id}_docx"
     docx_path = session["files"].get(docx_key)
 
-    if not docx_path or not os.path.exists(docx_path):
-        raise HTTPException(status_code=404, detail="File not found.")
-
-    raw_candidate_name = str(session.get("resume_data", {}).get("contact", {}).get("name", "") or "").strip()
-    candidate_name = re.sub(r"[^a-z0-9_]+", "_", raw_candidate_name.replace(" ", "_").lower()).strip("_") or "resume"
-    template_name = _template_download_name(template_id)
+    canonical_resume = ResumeAdapter.from_legacy(session["resume_data"])
+    renderer = RENDERER_FACTORY.get(template.id)
+    session_dir = TEMP_DIR / session_id
+    session_dir.mkdir(parents=True, exist_ok=True)
+    if fmt == "docx" and (not docx_path or not os.path.exists(docx_path)):
+        docx_path = str(session_dir / ("kanini_classic.docx" if template_id == "template1" else "deloitte_format.docx" if template_id == "template2" else f"{template_id}.docx"))
+        try:
+            renderer.render_docx(canonical_resume, Path(docx_path))
+        except Exception as exc:
+            logger.error("DOCX generation failed for session=%s: %s", session_id, exc, exc_info=True)
+            raise HTTPException(status_code=500, detail="Failed to generate DOCX.") from exc
+        session["files"][docx_key] = docx_path
 
     if fmt == "docx":
         return FileResponse(
             path=docx_path,
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            filename=f"{template_name}_{candidate_name}.docx",
+            filename=f"{download_stem}.docx",
         )
 
-    # PDF download. PDFs are generated eagerly from the HTML preview, so the
-    # cached file should already exist. If it is missing, regenerate it from
-    # the HTML preview using PyMuPDF rather than the unreliable Word COM path.
     pdf_key = f"{template_id}_pdf"
     pdf_path = session["files"].get(pdf_key)
 
     if not pdf_path or not os.path.exists(pdf_path):
         try:
-            html_generator = (
-                generate_preview_html_template1
-                if template_id == "template1"
-                else generate_preview_html_deloitte
-            )
-            css_class = "t1-logo" if template_id == "template1" else "kf-logo"
-            html_preview = _inject_logo_into_html(html_generator(session["resume_data"]), css_class)
-            pdf_path = str(Path(docx_path).with_suffix(".pdf"))
-            await asyncio.wait_for(
-                run_in_threadpool(convert_html_to_pdf, html_preview, pdf_path),
-                timeout=60,
-            )
+            pdf_path = str(session_dir / ("kanini_classic.pdf" if template_id == "template1" else "deloitte_format.pdf" if template_id == "template2" else f"{template_id}.pdf"))
+            result = await asyncio.wait_for(run_in_threadpool(renderer.render_pdf, canonical_resume, Path(pdf_path).with_suffix(".tex")), timeout=90)
+            pdf_path = str(result.path)
             session["files"][pdf_key] = pdf_path
-            logger.info("PDF regenerated from HTML preview for session=%s template=%s", session_id, template_id)
+            logger.info("PDF generated on demand for session=%s template=%s", session_id, template_id)
         except asyncio.TimeoutError:
             logger.warning("HTML-to-PDF timed out for session=%s template=%s", session_id, template_id)
             raise HTTPException(status_code=504, detail="PDF generation timed out. Please try again.")
@@ -2113,7 +2300,7 @@ async def download_file(session_id: str, template_id: str, fmt: str):
     return FileResponse(
         path=pdf_path,
         media_type="application/pdf",
-        filename=f"{template_name}_{candidate_name}.pdf",
+        filename=f"{download_stem}.pdf",
     )
 
 

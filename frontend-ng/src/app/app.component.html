@@ -4,6 +4,14 @@
     <span class="header-separator"></span>
     <span class="header-product">Resume Builder</span>
   </div>
+  <nav class="app-nav" aria-label="Primary navigation">
+    <button type="button" [class.active]="status() === 'home'" (click)="navigateTo('home')">Home</button>
+    <button type="button" [class.active]="status() === 'saved'" (click)="navigateTo('saved')">My Resumes</button>
+    <button type="button" [class.active]="status() === 'templates'" (click)="navigateTo('templates')">Templates</button>
+    <button type="button" class="theme-toggle" (click)="toggleTheme()" [attr.aria-label]="isDarkTheme() ? 'Switch to light mode' : 'Switch to dark mode'" [attr.title]="isDarkTheme() ? 'Switch to light mode' : 'Switch to dark mode'">
+      {{ isDarkTheme() ? 'Light' : 'Dark' }}
+    </button>
+  </nav>
 </header>
 
 <div class="push-toast-wrap" *ngIf="toastVisible()">
@@ -17,12 +25,38 @@
 <main class="app-main">
   <section class="app-main-panel">
     @switch (status()) {
+      @case ('home') {
+        <app-home (createResume)="navigateTo('idle')" (viewResumes)="navigateTo('saved')" (createTemplate)="navigateTo('templates')" />
+      }
       @case ('idle') {
         <app-file-upload (fileSelected)="onFileSelected($event)" />
       }
       @case ('uploading') {
         <app-loading-view />
       }
+      @case ('review') {
+        <app-review [sessionId]="sessionData()!.session_id" [resume]="sessionData()!.resume_data" (saved)="onReviewSaved($event)" (cancelled)="reset()" />
+      }
+      @case ('templates') {
+        <app-template-selection [allowTemplateCreation]="allowTemplateCreation()" (selected)="onTemplateSelected($event)" (create)="openTemplateCreation()" (manage)="manageTemplate($event)" />
+      }
+      @case ('template-create') {
+        <app-template-create (cancelled)="closeTemplateCreation()" (uploaded)="onTemplateDraftUploaded($event)" />
+      }
+      @case ('template-generating') {
+        <app-template-generation [draftId]="templateDraft()!.draft_id" (generated)="onTemplateDraftGenerated($event)" (cancelled)="closeTemplateCreation()" />
+      }
+      @case ('template-draft-preview') {
+        <app-template-draft-preview [draft]="generatedTemplateDraft()!" (saved)="onTemplateDraftSaved($event)" (closed)="closeTemplateCreation()" />
+      }
+      @case ('template-manage') {
+        <app-template-manage [template]="managedTemplate()!" [action]="managedTemplateAction()" (closed)="closeTemplateManagement()" (changed)="closeTemplateManagement()" />
+      }
+      @case ('preview') {
+        <app-resume-preview [sessionId]="sessionData()!.session_id" [template]="selectedTemplate()!" (changeTemplate)="backToTemplates()" (download)="showDownload()" />
+      }
+      @case ('download') { <app-download [sessionId]="sessionData()!.session_id" [template]="selectedTemplate()!" (changeTemplate)="backToTemplates()" /> }
+      @case ('saved') { <app-saved-resumes (open)="openSaved($event)" (create)="reset()" /> }
       @case ('success') {
         <app-results-view [sessionData]="sessionData()!" (reset)="reset()" />
       }

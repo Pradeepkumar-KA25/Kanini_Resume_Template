@@ -1,0 +1,17 @@
+{
+  "id": "user-4d1fe0ac276549ce8652cd496085f433",
+  "display_name": "Kanini Format 3",
+  "description": "Single-column Calibri resume template with a structured visual style and organized summary, skills, experience sections.",
+  "version": "1.0",
+  "enabled": true,
+  "supported_outputs": [
+    "html",
+    "docx",
+    "pdf"
+  ],
+  "page_size": "A4",
+  "aliases": [],
+  "assets": {},
+  "download_base_name": "user-4d1fe0ac276549ce8652cd496085f433",
+  "user_created": true
+}

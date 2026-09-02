@@ -1,0 +1,81 @@
+You design reusable professional resume templates.
+Create a design inspired only by the sample's section organization and content structure.
+Do not claim to copy its original visual layout: no font, color, spacing, or coordinate data was extracted.
+Return only a valid JSON object matching this exact schema, with no markdown or explanation:
+
+{
+  "page": {
+    "size": "A4",
+    "orientation": "portrait",
+    "margin_inches": 0.65
+  },
+  "typography": {
+    "font_family": "Calibri",
+    "base_size_pt": 10,
+    "heading_size_pt": 14
+  },
+  "colors": {
+    "text": "#1F2937",
+    "accent": "#0072B4",
+    "muted": "#64748B"
+  },
+  "header": {
+    "layout": "centered",
+    "contact_layout": "inline",
+    "show_divider": true
+  },
+  "layout": {
+    "columns": 1,
+    "sidebar_position": "none",
+    "section_alignment": "left"
+  },
+  "sections": [
+    "summary",
+    "skills",
+    "experience",
+    "projects",
+    "education",
+    "certifications",
+    "achievements"
+  ],
+  "spacing": {
+    "section_gap_pt": 12,
+    "line_height": 1.35,
+    "divider_style": "solid",
+    "skill_style": "inline"
+  }
+}
+
+Rules:
+- Output JSON only.
+- Do not include markdown.
+- Do not include HTML.
+- Do not include CSS.
+- Do not include JavaScript.
+- Do not include URLs.
+- Do not include assets.
+- Do not include executable code.
+- Do not include resume content.
+- sections must be an array of individual section names.
+- Each section must be one of: summary, skills, experience, projects, education, certifications, achievements.
+- Do not repeat sections.
+- Include at least one section.
+- margin_inches must be between 0.35 and 1.25.
+- base_size_pt must be between 8 and 14.
+- heading_size_pt must be between 12 and 24.
+- heading_size_pt must be greater than base_size_pt.
+- Colors must use exactly six-digit hexadecimal format such as #1F2937.
+- font_family must be one of: Arial, Calibri, Georgia, Helvetica, Times New Roman.
+- page size must be A4 or LETTER.
+- orientation must be portrait.
+- columns must be 1 or 2.
+- If columns is 1, sidebar_position must be none.
+- If columns is 2, sidebar_position must be left or right.
+- section_alignment must be left or justified.
+- section_gap_pt must be between 4 and 28.
+- line_height must be between 1.0 and 1.8.
+- divider_style must be none, solid, or accent.
+- skill_style must be inline, bullets, or tags.
+
+Sample resume structure:
+{"contact": {"name": "Avery Davis", "email": "ello@reallygreatsite.com", "phone": "123-456-7890", "location": "", "linkedin": "", "github": ""}, "summary": "I have experience providing detailed market analysis, strategic consulting, innovative financial solutions to a wide range of clients, including government agencies, startups, and multinationals. My expertise also extends to risk management and the development of complex economic models. For me, teamwork is synonymous with success.", "skills": {"Other Skills": ["LANGUAGES", "Management", "Problem-Solving", "English (native)", "Front/Back End Coding", "Computer Literacy", "Spanish (C1)", "Market Research", "Critical Thinking", "French (B2)"]}, "experience": [{"company": "018 - 2020", "company_name": "018 - 2020", "company_sector": "", "title": "2", "location": "amet, consectetur adipiscing elit.", "dates": "2024- 2028", "responsibilities": ["Salford & Co - Data Analyst", "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc sit amet sem nec risus egestas accumsan. In enim", "nunc, tincidunt ut quam eget, luctus sollicitudin neque. In enim nunc, tincidunt ut quam. Lorem ipsum dolor sit"], "projects": []}], "education": [{"degree": "014", "institution": "Business University", "year": "2017", "gpa": ""}, {"degree": "Data Analysis Master’s Degree", "institution": "2", "year": "", "gpa": ""}], "certifications": [], "projects": [], "achievements": []}

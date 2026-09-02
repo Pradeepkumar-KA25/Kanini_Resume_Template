@@ -1,0 +1,17 @@
+.draft-preview { max-width: 1050px; margin: 0 auto; display: grid; gap: 20px; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.eyebrow { margin: 0; color: var(--kanini-primary); font-weight: 700; }
+h1 { margin: 2px 0; color: var(--kanini-dark); font-size: 1.55rem; }
+header p:last-child { margin: 0; color: var(--kanini-gray); }
+.document { width: 100%; min-height: 760px; border: 0; background: #eef1f5; }
+.template-details { display: grid; gap: 8px; max-width: 720px; }
+.template-details label { font-size: .85rem; font-weight: 700; color: var(--kanini-text); }
+.template-details input, .template-details textarea { width: 100%; border: 1px solid var(--border); border-radius: var(--control-radius); background: var(--white); color: var(--kanini-text); font: inherit; padding: 9px 10px; }
+.template-details input:focus-visible, .template-details textarea:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
+.form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
+.secondary { min-height: var(--control-height); padding: var(--control-padding); border: 1px solid var(--kanini-primary); border-radius: var(--control-radius); background: var(--white); color: var(--kanini-primary); font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer; }
+.primary { min-height: var(--control-height); padding: var(--control-padding); border: 1px solid var(--kanini-primary); border-radius: var(--control-radius); background: var(--kanini-primary); color: #fff; font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer; }
+.primary:disabled, .secondary:disabled { cursor: not-allowed; opacity: .65; }
+.error { margin: 0; color: var(--danger); font-size: .9rem; }.success { margin: 0; color: #117a45; font-size: .9rem; }
+:host-context(.dark-theme) h1 { color: #e6edf5; }
+@media (max-width: 600px) { header { align-items: flex-start; flex-direction: column; } .document { min-height: 600px; } .form-actions { flex-direction: column-reverse; } .form-actions button { width: 100%; } }

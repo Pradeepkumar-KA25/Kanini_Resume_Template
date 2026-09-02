@@ -1,0 +1,12 @@
+{
+  "id": "kanini-format-2",
+  "display_name": "Kanini Format 2",
+  "description": "Dense A4 Kanini profile with project client and technical stack details.",
+  "version": "1.0",
+  "enabled": true,
+  "supported_outputs": ["html", "docx", "pdf"],
+  "page_size": "A4",
+  "aliases": ["template2"],
+  "assets": {"logo": "shared/assets/kanini-logo.png"},
+  "download_base_name": "Kanini_Format2_Profile"
+}

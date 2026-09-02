@@ -1,7 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
+from pathlib import Path
 from PyInstaller.utils.hooks import collect_all
 
-datas = [('D:\\Templates\\Template\\frontend-ng\\dist\\frontend-ng\\browser', 'frontend-dist')]
+ROOT = Path(SPECPATH)
+BACKEND = ROOT / 'backend'
+FRONTEND = ROOT / 'frontend-ng' / 'dist' / 'frontend-ng' / 'browser'
+datas = [(str(FRONTEND), 'frontend-dist'), (str(BACKEND / 'templates'), 'templates')]
 binaries = []
 hiddenimports = []
 tmp_ret = collect_all('chromadb')
@@ -9,8 +13,8 @@ datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 
 a = Analysis(
-    ['D:\\Templates\\Template\\backend\\main.py'],
-    pathex=[],
+    [str(BACKEND / 'main.py')],
+    pathex=[str(BACKEND)],
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,

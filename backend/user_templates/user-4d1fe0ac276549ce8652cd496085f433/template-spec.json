@@ -1,0 +1,41 @@
+{
+  "page": {
+    "size": "A4",
+    "orientation": "portrait",
+    "margin_inches": 0.65
+  },
+  "typography": {
+    "font_family": "Calibri",
+    "base_size_pt": 12,
+    "heading_size_pt": 16
+  },
+  "colors": {
+    "text": "#1F2937",
+    "accent": "#0072B4",
+    "muted": "#64748B"
+  },
+  "header": {
+    "layout": "centered",
+    "contact_layout": "inline",
+    "show_divider": true
+  },
+  "layout": {
+    "columns": 1,
+    "sidebar_position": "none",
+    "section_alignment": "left"
+  },
+  "sections": [
+    "summary",
+    "skills",
+    "experience",
+    "education",
+    "certifications",
+    "achievements"
+  ],
+  "spacing": {
+    "section_gap_pt": 12,
+    "line_height": 1.35,
+    "divider_style": "solid",
+    "skill_style": "inline"
+  }
+}

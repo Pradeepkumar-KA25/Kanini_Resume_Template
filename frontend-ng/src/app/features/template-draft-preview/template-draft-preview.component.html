@@ -1,0 +1,13 @@
+<section class="draft-preview" aria-labelledby="draft-preview-title">
+  <header><div><p class="eyebrow">Template draft</p><h1 id="draft-preview-title">Generated Template Preview</h1><p>Reusable layout inspired by the sample resume's structure.</p></div><button type="button" class="secondary" (click)="closed.emit()">Back to Templates</button></header>
+  <iframe class="document" [attr.srcdoc]="draft.preview_html" sandbox="" title="Generated template draft preview"></iframe>
+  <form class="template-details" (ngSubmit)="save()">
+    <label for="template-name">Template Name</label>
+    <input id="template-name" name="templateName" [(ngModel)]="templateName" maxlength="80" [disabled]="saving()" required />
+    <label for="template-description">Template Description</label>
+    <textarea id="template-description" name="description" [(ngModel)]="description" maxlength="240" rows="3" [disabled]="saving()" required></textarea>
+    @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+    @if (success()) { <p class="success" role="status">{{ success() }}</p> }
+    <div class="form-actions"><button type="button" class="secondary" (click)="closed.emit()" [disabled]="saving()">Cancel</button><button type="submit" class="primary" [disabled]="saving()">{{ saving() ? 'Saving...' : 'Save Template' }}</button></div>
+  </form>
+</section>
