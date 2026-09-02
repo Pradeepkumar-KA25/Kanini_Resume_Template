@@ -30,6 +30,47 @@ def test_format2_registry_and_rendered_formats(renderer, resume, tmp_path: Path)
     assert r"C\# \& Python" in tex.path.read_text(encoding="utf-8")
 
 
+def test_format2_includes_all_populated_sections(renderer, tmp_path: Path):
+    resume = ResumeData(
+        contact={"name": "Candidate Name"},
+        summary="Professional summary.",
+        skills={"Data": ["Python"]},
+        experience=[{"company": "Contoso", "title": "Engineer", "responsibilities": ["Built the experience feature."], "projects": [{"name": "Migration", "description": "Project delivery."}]}],
+        certifications=["Azure Certified"],
+        achievements=["Award winner"],
+    )
+
+    html = renderer.render_html(resume).content or ""
+    docx = renderer.render_docx(resume, tmp_path / "format2-all-sections.docx")
+    docx_text = "\n".join(paragraph.text for paragraph in Document(docx.path).paragraphs)
+
+    for heading in ("Professional Summary:", "Technical Skills:", "Working Experience:", "Project Summary:", "Certifications:", "Achievements:"):
+        assert heading in html
+        assert heading.upper() in docx_text
+    assert "Built the experience feature." in html
+    assert "Built the experience feature." in docx_text
+
+
+@pytest.mark.skipif(shutil.which("xelatex") is None, reason="XeLaTeX is not installed")
+def test_format2_pdf_includes_all_populated_sections(renderer, tmp_path: Path):
+    resume = ResumeData(
+        contact={"name": "Candidate Name"},
+        summary="Professional summary. " * 300,
+        skills={"Data": ["Python", "SQL"]},
+        experience=[{"company": "Contoso", "title": "Engineer", "responsibilities": ["Delivered a platform. " * 100], "projects": [{"name": "Migration", "description": "Project delivery. " * 100}]}],
+        certifications=["Azure Certified"],
+        achievements=["Award winner"],
+    )
+
+    result = renderer.render_pdf(resume, tmp_path / "format2-all-sections.tex")
+    document = pymupdf.open(result.path)
+    text = "\n".join(page.get_text() for page in document)
+
+    assert len(document) > 1
+    for heading in ("PROFESSIONAL SUMMARY:", "TECHNICAL SKILLS:", "WORKING EXPERIENCE:", "PROJECT SUMMARY:", "CERTIFICATIONS:", "ACHIEVEMENTS:"):
+        assert heading in text
+
+
 @pytest.mark.skipif(shutil.which("xelatex") is None, reason="XeLaTeX is not installed")
 @pytest.mark.parametrize("summary", ["Short resume.", "Long content. " * 160, "Zoë works in München.", "Characters: & % $ # _ { } ~ ^ \\ "])
 def test_format2_pdf_handles_content_edges(renderer, resume, tmp_path: Path, summary: str):

@@ -56,6 +56,45 @@ def test_format1_docx_is_valid_and_contains_expected_sections(renderer, format1_
     assert "EDUCATIONAL QUALIFICATION" in text
 
 
+def test_format1_includes_all_populated_sections(renderer, tmp_path: Path):
+    resume = ResumeData(
+        contact={"name": "Candidate Name"},
+        summary="Professional summary.",
+        skills={"Data": ["Python"]},
+        experience=[{"company": "Contoso", "title": "Engineer", "projects": [{"name": "Migration", "description": "Project delivery."}]}],
+        certifications=["Azure Certified"],
+        achievements=["Award winner"],
+    )
+
+    html = renderer.render_html(resume).content or ""
+    docx = renderer.render_docx(resume, tmp_path / "format1-all-sections.docx")
+    docx_text = "\n".join(paragraph.text for paragraph in Document(docx.path).paragraphs)
+
+    for heading in ("Profile Summary", "Technical Skills", "Work Experience", "Project Summary", "Certifications", "Achievements"):
+        assert heading in html
+        assert heading.upper() in docx_text
+
+
+@pytest.mark.skipif(shutil.which("xelatex") is None, reason="XeLaTeX is not installed")
+def test_format1_pdf_includes_all_populated_sections(renderer, tmp_path: Path):
+    resume = ResumeData(
+        contact={"name": "Candidate Name"},
+        summary="Professional summary. " * 80,
+        skills={"Data": ["Python", "SQL"]},
+        experience=[{"company": "Contoso", "title": "Engineer", "responsibilities": ["Delivered a platform. " * 30], "projects": [{"name": "Migration", "description": "Project delivery. " * 30}]}],
+        certifications=["Azure Certified"],
+        achievements=["Award winner"],
+    )
+
+    result = renderer.render_pdf(resume, tmp_path / "format1-all-sections.tex")
+    document = pymupdf.open(result.path)
+    text = "\n".join(page.get_text() for page in document)
+
+    assert len(document) > 1
+    for heading in ("PROFILE SUMMARY", "TECHNICAL SKILLS", "WORK EXPERIENCE", "PROJECT SUMMARY", "CERTIFICATIONS", "ACHIEVEMENTS"):
+        assert heading in text
+
+
 def test_format1_latex_renders_data_and_omits_empty_optional_sections(renderer, format1_resume, tmp_path: Path):
     result = renderer.render_latex(format1_resume, tmp_path / "format1.tex")
     source = result.path.read_text(encoding="utf-8")

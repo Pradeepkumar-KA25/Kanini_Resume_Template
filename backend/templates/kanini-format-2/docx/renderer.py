@@ -17,7 +17,7 @@ def render(resume: ResumeData, output_path: Path, logo_path: Path | None = None)
  if resume.summary: section('Professional Summary:');[p(x) for x in resume.summary.splitlines()]
  if resume.skills: section('Technical Skills:');[p(f'{k} : {", ".join(x)}') for k,x in resume.skills.items()]
  if resume.experience:
-  section('Working Experience:');[p(f'{k} : {value or "-"}') for e in resume.experience for k,value in [('Company Name',e.company_name or e.company_sector or e.company),('Designation',e.title),('Duration',e.dates)]]
+    section('Working Experience:');[p(f'{k} : {value or "-"}') for e in resume.experience for k,value in [('Company Name',e.company_name or e.company_sector or e.company),('Designation',e.title),('Duration',e.dates)]];[p('• '+responsibility) for e in resume.experience for responsibility in e.responsibilities]
  if v.projects:
   section('Project Summary:')
   for i,x in enumerate(v.projects,1):
